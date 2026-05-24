@@ -17,6 +17,12 @@ npx vitest -t "test name pattern"              # Run tests matching a pattern
 npm run serve:ssr:shici                        # Serve the SSR build locally (port 4000)
 ```
 
+Tests use Vitest via `@angular/build:unit-test`. Run with:
+```bash
+ng test                   # Run all tests
+npx vitest --run          # Direct vitest (needs the Angular build step first)
+```
+
 No lint script is configured yet. Formatting uses Prettier:
 ```bash
 npx prettier --check .     # Check formatting
@@ -25,30 +31,54 @@ npx prettier --write .     # Fix formatting
 
 ## Architecture
 
-This is an **Angular v21.2+** application with **SSR** via the `@angular/ssr` package and an **Express v5** server. Styling uses **Tailwind CSS v4** via the `@tailwindcss/postcss` PostCSS plugin. Testing uses **Vitest** (not Jasmine/Karma).
+This is a **Chinese poetry showcase** app ("诗词集") built with **Angular v21.2+**, **SSR**, **Tailwind CSS v4**, and **Vitest**. All poem data (6 poems) is static and served from `PoemsService`. Theme and font settings are managed via `SettingsService` (signal-based state).
 
 ### SSR / dual-entry setup
 
 - **Client entry**: `src/main.ts` → bootstraps `App` with `appConfig` (`provideRouter`, `provideClientHydration` with event replay)
 - **Server entry**: `src/main.server.ts` → exports a bootstrap function that merges client config with `provideServerRendering`
 - **Express server**: `src/server.ts` — serves static files from `dist/shici/browser`, falls back to `AngularNodeAppEngine` for SSR; listens on `PORT` env var (default 4000)
-- **Server routes**: `src/app/app.routes.server.ts` — currently prerenders all routes (`**` → `RenderMode.Prerender`)
+- **Server routes**: `src/app/app.routes.server.ts` — home page prerendered, `poem/:id` and wildcard are server-rendered
 
-### Key files
+### Routes
 
-| File | Purpose |
-|------|---------|
-| `src/app/app.config.ts` | Client app config (router, hydration) |
-| `src/app/app.config.server.ts` | Server app config (merges SSR provider with client config) |
-| `src/app/app.routes.ts` | Route definitions (currently empty array) |
-| `src/app/app.routes.server.ts` | SSR render mode per route |
-| `src/app/app.ts` | Root component (signal-based title, `RouterOutlet`) |
-| `src/app/app.html` | Root template — currently Angular's default placeholder; the test expects "Hello, shici" |
-| `src/server.ts` | Express server entry point |
-| `tsconfig.json` | Root TS config (strict mode, `strictTemplates`, `strictInjectionParameters`, `strictInputAccessModifiers`) |
-| `tsconfig.app.json` | App TS config (targets ES2022, includes `src/**/*.ts`, excludes `.spec.ts`) |
-| `tsconfig.spec.json` | Test TS config (uses `vitest/globals` types) |
-| `public/` | Static assets served at build time (currently only `favicon.ico`) |
+| Path | Page | SSR Mode |
+|------|------|----------|
+| `/` | `HomeComponent` (lazy) | Prerender |
+| `/poem/:id` | `DetailComponent` (lazy) | Server |
+
+### Project structure
+
+```
+src/
+  index.html                    # zh-CN, Google Fonts (Ma Shan Zheng, Noto Serif SC, ZCOOL XiaoWei)
+  styles.css                    # Tailwind v4 @import + @theme tokens (poetry color palettes, font families)
+  main.ts                       # Client bootstrap
+  main.server.ts                # Server bootstrap
+  server.ts                     # Express v5 SSR server (port 4000)
+  app/
+    app.ts                      # Root — minimal, just <router-outlet/>
+    app.config.ts               # Client: provideRouter + provideClientHydration(withEventReplay())
+    app.config.server.ts        # Server: merges provideServerRendering
+    app.routes.ts               # Lazy routes: '' → Home, 'poem/:id' → Detail
+    app.routes.server.ts        # SSR modes: Home prerendered, others server-rendered
+    theme-utils.ts              # Shared theme→Tailwind class mappings (bg, card, title, text, muted, accent, border)
+    services/
+      poems.service.ts          # Injectable — 6 hardcoded poems + getAuthors/getCipais/getDynasties/getThemes/getPoemById
+      settings.service.ts       # Injectable — signals for currentTheme (classic|inkwash|vermilion|jade|night) and currentFont (serif|kai|xiaowei)
+    pages/
+      home/home.component.ts    # Index page: CoverPage splash, FilterBar, PoemListItem list, Settings panel
+      detail/detail.component.ts# Poem detail: poem card, tabs (注释/译文/赏析), prev/next nav, share modal
+    components/
+      cover-page/               # Splash screen with theme gradient, "开卷有益" CTA
+      filter-bar/               # 4 dropdown filters (author/cipai/dynasty/theme)
+      poem-list-item/           # Compact poem card for index list
+      poem-card/                # Horizontal poem detail card
+      poem-card-vertical/       # Vertical RTL poem card (writing-mode: vertical-rl)
+      share-card/               # Shareable 3:4 card modal content
+      theme-selector/           # 5-theme palette picker
+      font-selector/            # 3-font (宋体/楷书/小篆) picker
+```
 
 ### Tech stack
 
