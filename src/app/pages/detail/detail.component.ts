@@ -1,10 +1,9 @@
-import { Component, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PoemsService, type Poem } from '../../services/poems.service';
 import { SettingsService } from '../../services/settings.service';
 import { themeClassesExtended } from '../../theme-utils';
 import { ShareCardComponent } from '../../components/share-card/share-card';
-import type { ThemeId } from '../../services/settings.service';
 
 type TabType = 'annotations' | 'translation' | 'appreciation';
 
@@ -236,11 +235,11 @@ export class DetailComponent {
   currentIndex = signal(-1);
   prevPoem = computed(() => {
     const idx = this.currentIndex();
-    return idx > 0 ? this.poemsService.poems[idx - 1] : null;
+    return idx > 0 ? this.poemsService.poems()[idx - 1] : null;
   });
   nextPoem = computed(() => {
     const idx = this.currentIndex();
-    return idx < this.poemsService.poems.length - 1 ? this.poemsService.poems[idx + 1] : null;
+    return idx < this.poemsService.poems().length - 1 ? this.poemsService.poems()[idx + 1] : null;
   });
 
   styles = computed(() => themeClassesExtended[this.theme()] ?? themeClassesExtended.classic);
@@ -249,7 +248,7 @@ export class DetailComponent {
     const id = this.route.snapshot.paramMap.get('id') || '';
     const poem = this.poemsService.getPoemById(id);
     this.poem.set(poem);
-    this.currentIndex.set(this.poemsService.poems.findIndex((p) => p.id === id));
+    this.currentIndex.set(this.poemsService.poems().findIndex((p) => p.id === id));
   }
 
   goBack(): void {
@@ -260,7 +259,7 @@ export class DetailComponent {
     this.router.navigate(['/poem', id]).then(() => {
       const poem = this.poemsService.getPoemById(id);
       this.poem.set(poem);
-      this.currentIndex.set(this.poemsService.poems.findIndex((p) => p.id === id));
+      this.currentIndex.set(this.poemsService.poems().findIndex((p) => p.id === id));
       this.activeTab.set('annotations');
       this.showShareCard.set(false);
     });

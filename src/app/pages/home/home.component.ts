@@ -148,7 +148,7 @@ export class HomeComponent implements OnInit {
     const cipai = this.selectedCipai();
     const dynasty = this.selectedDynasty();
     const theme = this.selectedTheme();
-    return this.poemsService.poems.filter((poem) => {
+    return this.poemsService.poems().filter((poem) => {
       if (author && poem.author !== author) return false;
       if (cipai && poem.cipai !== cipai) return false;
       if (dynasty && poem.dynasty !== dynasty) return false;
