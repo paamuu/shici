@@ -1,4 +1,3 @@
-
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -9,98 +8,69 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 
 ```bash
 npm start              # Dev server (http://localhost:4200)
-npm run build          # Production build
+npm run build          # Production build (outputs to dist/)
 npm run watch          # Dev build with watch
-npm test               # Run all tests (Vitest)
+npm test               # Run all tests (Vitest via @angular/build:unit-test)
 npx vitest --reporter=verbose                  # Run all tests with verbose output
 npx vitest path/to/file.spec.ts                # Run a single test file
 npx vitest -t "test name pattern"              # Run tests matching a pattern
-npm run serve:ssr:shici                        # Serve the SSR build locally
+npm run serve:ssr:shici                        # Serve the SSR build locally (port 4000)
 ```
 
-No lint script is configured yet. Formatting uses Prettier (`npx prettier --check .` / `npx prettier --write .`).
+No lint script is configured yet. Formatting uses Prettier:
+```bash
+npx prettier --check .     # Check formatting
+npx prettier --write .     # Fix formatting
+```
 
 ## Architecture
 
-This is an **Angular v21+** application with **SSR** (server-side rendering) via the `@angular/ssr` package and an **Express v5** server. Styling uses **Tailwind CSS v4** (`@tailwindcss/postcss` plugin). Testing uses **Vitest** (not Jasmine/Karma).
+This is an **Angular v21.2+** application with **SSR** via the `@angular/ssr` package and an **Express v5** server. Styling uses **Tailwind CSS v4** via the `@tailwindcss/postcss` PostCSS plugin. Testing uses **Vitest** (not Jasmine/Karma).
 
 ### SSR / dual-entry setup
 
 - **Client entry**: `src/main.ts` → bootstraps `App` with `appConfig` (`provideRouter`, `provideClientHydration` with event replay)
-- **Server entry**: `src/main.server.ts` → bootstraps `App` with a merged config that adds `provideServerRendering`
-- **Express server**: `src/server.ts` — serves static browser files, falls back to `AngularNodeAppEngine` for SSR
-- **Server routes**: `src/app/app.routes.server.ts` — currently set to prerender all routes (`**` → `RenderMode.Prerender`)
+- **Server entry**: `src/main.server.ts` → exports a bootstrap function that merges client config with `provideServerRendering`
+- **Express server**: `src/server.ts` — serves static files from `dist/shici/browser`, falls back to `AngularNodeAppEngine` for SSR; listens on `PORT` env var (default 4000)
+- **Server routes**: `src/app/app.routes.server.ts` — currently prerenders all routes (`**` → `RenderMode.Prerender`)
 
 ### Key files
 
 | File | Purpose |
 |------|---------|
 | `src/app/app.config.ts` | Client app config (router, hydration) |
-| `src/app/app.config.server.ts` | Server app config (adds SSR provider, merges with client config) |
-| `src/app/app.routes.ts` | Route definitions (currently empty) |
+| `src/app/app.config.server.ts` | Server app config (merges SSR provider with client config) |
+| `src/app/app.routes.ts` | Route definitions (currently empty array) |
 | `src/app/app.routes.server.ts` | SSR render mode per route |
-| `src/app/app.ts` | Root component (signal-based state, `RouterOutlet`) |
+| `src/app/app.ts` | Root component (signal-based title, `RouterOutlet`) |
+| `src/app/app.html` | Root template — currently Angular's default placeholder; the test expects "Hello, shici" |
 | `src/server.ts` | Express server entry point |
+| `tsconfig.json` | Root TS config (strict mode, `strictTemplates`, `strictInjectionParameters`, `strictInputAccessModifiers`) |
 | `tsconfig.app.json` | App TS config (targets ES2022, includes `src/**/*.ts`, excludes `.spec.ts`) |
-| `tsconfig.spec.json` | Test TS config (uses Vitest globals) |
+| `tsconfig.spec.json` | Test TS config (uses `vitest/globals` types) |
+| `public/` | Static assets served at build time (currently only `favicon.ico`) |
 
 ### Tech stack
 
 - Angular v21.2+ (standalone components by default)
 - TypeScript v5.9 (strict mode, isolated modules)
 - Express v5.1
-- Tailwind CSS v4.1 (PostCSS plugin, imported in `src/styles.css`)
+- Tailwind CSS v4.1 (imported via `@import 'tailwindcss'` in `src/styles.css`)
 - Vitest v4.0 (configured via `@angular/build:unit-test` builder)
+- PostCSS with `@tailwindcss/postcss` plugin
+- Prettier v3.8 (printWidth: 100, single quotes, Angular parser for HTML)
 
-## TypeScript Best Practices
+## Project conventions
 
-- Use strict type checking
-- Prefer type inference when the type is obvious
-- Avoid the `any` type; use `unknown` when type is uncertain
-
-## Angular Best Practices
-
-- Always use standalone components over NgModules
-- Must NOT set `standalone: true` inside Angular decorators. It's the default in Angular v20+.
-- Use signals for state management
-- Implement lazy loading for feature routes
-- Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
-- Use `NgOptimizedImage` for all static images.
-  - `NgOptimizedImage` does not work for inline base64 images.
-
-## Accessibility Requirements
-
-- It MUST pass all AXE checks.
-- It MUST follow all WCAG AA minimums, including focus management, color contrast, and ARIA attributes.
-
-### Components
-
-- Keep components small and focused on a single responsibility
-- Use `input()` and `output()` functions instead of decorators
-- Use `computed()` for derived state
-- Set `changeDetection: ChangeDetectionStrategy.OnPush` in `@Component` decorator
-- Prefer inline templates for small components
-- Prefer Reactive forms instead of Template-driven ones
-- Do NOT use `ngClass`, use `class` bindings instead
-- Do NOT use `ngStyle`, use `style` bindings instead
-- When using external templates/styles, use paths relative to the component TS file.
-
-## State Management
-
-- Use signals for local component state
-- Use `computed()` for derived state
-- Keep state transformations pure and predictable
-- Do NOT use `mutate` on signals, use `update` or `set` instead
-
-## Templates
-
-- Keep templates simple and avoid complex logic
-- Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`
-- Use the async pipe to handle observables
-- Do not assume globals like (`new Date()`) are available.
-
-## Services
-
-- Design services around a single responsibility
-- Use the `providedIn: 'root'` option for singleton services
-- Use the `inject()` function instead of constructor injection
+- **Standalone components only** — do NOT set `standalone: true` inside decorators (it's the default in Angular v20+)
+- **Signals for state** — use `input()`, `output()`, `computed()`, `signal()`; avoid decorator-based `@Input`/`@Output`
+- **OnPush change detection** by default on all components
+- **Native control flow** in templates (`@if`, `@for`, `@switch`) — never `*ngIf`/`*ngFor`/`*ngSwitch`
+- **Use `inject()`** instead of constructor injection for services
+- **No `ngClass` or `ngStyle`** — use `[class]` and `[style]` bindings
+- **No `@HostBinding` or `@HostListener`** — use the `host` property in the `@Component`/`@Directive` decorator
+- **External templates/styles** use paths relative to the component TS file
+- **Reactive forms** over template-driven forms
+- **2-space indent**, single quotes in TypeScript (`tsconfig.json` + `.editorconfig` + `.prettierrc` all enforce this)
+- **Accessibility**: pass AXE checks, meet WCAG AA minimums (focus management, color contrast, ARIA attributes)
+- **NgOptimizedImage** for all static images (not for inline base64)
