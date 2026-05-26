@@ -15,7 +15,7 @@ export interface Poem {
   dynasty: string;
   date?: string;
   preface?: string;
-  theme: string[];
+  theme?: string[];
   paragraphs: string[][];
   annotations?: PoemAnnotation[];
   translation?: string;
@@ -67,7 +67,7 @@ export class PoemsService {
   }
 
   getThemes(): string[] {
-    return [...new Set(this._poems().flatMap((p) => p.theme))];
+    return [...new Set(this._poems().flatMap((p) => p.theme ?? []))];
   }
 
   getPoemById(id: string): Poem | undefined {

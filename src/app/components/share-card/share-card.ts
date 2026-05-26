@@ -41,14 +41,14 @@ import type { ThemeId } from '../../services/settings.service';
 
         <div class="flex-1 flex flex-col justify-center gap-3">
           @for (line of displayLines(); track $index) {
-            <p class="text-base text-center leading-relaxed tracking-widest"
+            <p class="text-base text-left leading-relaxed tracking-widest"
               [class]="styles().text"
               style="font-family: 'Noto Serif SC', serif">
               {{ line }}
             </p>
           }
           @if (allLines().length > 4) {
-            <p class="text-sm text-center" [class]="styles().muted">......</p>
+            <p class="text-sm text-left" [class]="styles().muted">......</p>
           }
         </div>
 

@@ -54,9 +54,9 @@ import type { ThemeId } from '../../services/settings.service';
 
       <div class="flex flex-col gap-8">
         @for (paragraph of poem().paragraphs; track $index) {
-          <div class="flex flex-col gap-2 items-center">
+          <div class="flex flex-col gap-2">
             @for (line of paragraph; track $index) {
-              <p class="text-lg md:text-xl leading-loose tracking-widest text-center"
+              <p class="text-lg md:text-xl leading-loose tracking-widest text-left"
                 [class]="styles().text"
                 style="font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif">
                 {{ line }}

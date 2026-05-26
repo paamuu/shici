@@ -73,7 +73,7 @@ type TabType = 'annotations' | 'translation' | 'appreciation';
 
             <div class="flex flex-col gap-10">
               @for (paragraph of poem.paragraphs; track $index) {
-                <div class="flex flex-col gap-3 items-center">
+                <div class="flex flex-col gap-3">
                   @for (line of paragraph; track $index) {
                     <p class="text-xl md:text-2xl leading-loose tracking-widest text-center"
                       [class]="styles().text">

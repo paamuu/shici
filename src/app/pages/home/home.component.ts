@@ -152,7 +152,7 @@ export class HomeComponent implements OnInit {
       if (author && poem.author !== author) return false;
       if (cipai && poem.cipai !== cipai) return false;
       if (dynasty && poem.dynasty !== dynasty) return false;
-      if (theme && !poem.theme.includes(theme)) return false;
+      if (theme && !(poem.theme ?? []).includes(theme)) return false;
       return true;
     });
   });
