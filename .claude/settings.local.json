@@ -5,7 +5,13 @@
       "Bash(npm test *)",
       "Bash(npx vitest *)",
       "Bash(ng test *)",
-      "Bash(npm start *)"
+      "Bash(npm start *)",
+      "Bash(python -c \"import pytesseract; print\\('ok'\\)\")",
+      "Bash(python -c \"from PIL import Image; print\\('pillow ok'\\)\")",
+      "Bash(python -c \"import fitz; print\\('pymupdf ok'\\)\")",
+      "Bash(pip install *)",
+      "Bash(winget install *)",
+      "Bash(python -c ' *)"
     ]
   }
 }
