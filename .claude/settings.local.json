@@ -1,4 +1,7 @@
 {
+  "sandbox": {
+    "excludedCommands": ["python", "python3", "pip"]
+  },
   "permissions": {
     "allow": [
       "Bash(npm run *)",
@@ -18,7 +21,9 @@
       "Bash(python doc/extract_poems.py)",
       "Bash(python doc/generate_json.py)",
       "Bash(python doc/finalize_poems.py)",
-      "Bash(grep -oP '.{0,80}text-left.{0,80}' dist/shici/browser/chunk-LPSZQVQS.js)"
+      "Bash(grep -oP '.{0,80}text-left.{0,80}' dist/shici/browser/chunk-LPSZQVQS.js)",
+      "Bash(claude --version)",
+      "Bash(claude update *)"
     ],
     "defaultMode": "acceptEdits"
   }
