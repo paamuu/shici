@@ -1,4 +1,4 @@
-import { Component, input, output, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, computed } from '@angular/core';
 import type { Poem } from '../../services/poems.service';
 import { listItemClasses } from '../../theme-utils';
 import type { ThemeId } from '../../services/settings.service';
@@ -6,8 +6,10 @@ import type { ThemeId } from '../../services/settings.service';
 @Component({
   selector: 'app-poem-list-item',
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
+      type="button"
       class="w-full border rounded-xl p-5 md:p-6 text-left transition-all duration-200 group"
       [class]="styles().card + ' ' + styles().border + ' ' + styles().hover"
       (click)="onClick.emit()"

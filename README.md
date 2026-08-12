@@ -1,59 +1,33 @@
-# Shici
+# 诗词集
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.12.
+Angular 21 + Tailwind CSS 4 的中国古典诗词展示应用，支持 SSR 预渲染、主题配色、字体切换、筛选与详情分享卡片。
 
-## Development server
+## 功能
 
-To start a local development server, run:
+- 首页封面与诗词列表
+- 作者、词牌、朝代、主题筛选
+- 5 套配色主题与 3 种字体
+- 详情页注释、译文、赏析 tab
+- 分享卡片弹层
+- 37 首诗词 JSON 数据（`public/data/poems/`）
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 开发
 
 ```bash
-ng generate component component-name
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+打开 http://localhost:4200/。
+
+## 构建与测试
 
 ```bash
-ng generate --help
+npm run build
+npm test
 ```
 
-## Building
+生产构建会尝试内联 Google Fonts，离线环境下需要网络或改用本地字体资源。
 
-To build the project run:
+## 数据
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+诗词以 JSON 形式存放在 `public/data/poems/`，`manifest.json` 列出全部文件。应用启动时通过 `PoemsService` 一次性加载；单个文件加载失败不会阻塞其他诗词。

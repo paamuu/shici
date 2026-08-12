@@ -1,11 +1,12 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FONTS, type FontId } from '../../services/settings.service';
 
 @Component({
   selector: 'app-font-selector',
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-4" role="radiogroup" aria-label="字体风格">
       <div class="flex items-center gap-2 text-sm text-gray-500">
         <!-- Type icon -->
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -18,6 +19,9 @@ import { FONTS, type FontId } from '../../services/settings.service';
       <div class="flex flex-wrap gap-3">
         @for (f of fonts; track f.id) {
           <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="currentFont() === f.id"
             (click)="onFontChange.emit(f.id)"
             class="flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all duration-200 bg-white"
             [class.border-gray-400]="currentFont() === f.id"

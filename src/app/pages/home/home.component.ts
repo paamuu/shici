@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { PoemsService } from '../../services/poems.service';
 import { SettingsService, type ThemeId, type FontId } from '../../services/settings.service';
+import { UiStateService } from '../../services/ui-state.service';
 import { themeClasses } from '../../theme-utils';
 import { CoverPageComponent } from '../../components/cover-page/cover-page';
 import { FilterBarComponent } from '../../components/filter-bar/filter-bar';
@@ -12,11 +13,12 @@ import { FontSelectorComponent } from '../../components/font-selector/font-selec
 @Component({
   selector: 'app-home',
   imports: [CoverPageComponent, FilterBarComponent, PoemListItemComponent, ThemeSelectorComponent, FontSelectorComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (showCover()) {
       <app-cover-page
         [theme]="theme()"
-        (onEnter)="showCover.set(false)"
+        (onEnter)="enterLibrary()"
       />
     } @else {
       <div class="min-h-screen transition-colors duration-500"
@@ -36,6 +38,10 @@ import { FontSelectorComponent } from '../../components/font-selector/font-selec
             </div>
 
             <button
+              type="button"
+              [attr.aria-label]="showSettings() ? '关闭设置' : '打开设置'"
+              [attr.aria-expanded]="showSettings()"
+              aria-controls="settings-panel"
               (click)="showSettings.set(!showSettings())"
               class="p-2 rounded-lg transition-all"
               [class]="showSettings()
@@ -57,7 +63,7 @@ import { FontSelectorComponent } from '../../components/font-selector/font-selec
 
         <!-- Settings Panel -->
         @if (showSettings()) {
-          <div class="max-w-2xl mx-auto px-4 py-6 border-b border-black/5 backdrop-blur-sm"
+          <div id="settings-panel" class="max-w-2xl mx-auto px-4 py-6 border-b border-black/5 backdrop-blur-sm"
             [class]="theme() === 'night' ? 'bg-[#2C2C2E]/50' : 'bg-white/50'">
             <div class="flex flex-col gap-6">
               <app-theme-selector
@@ -124,11 +130,12 @@ export class HomeComponent implements OnInit {
   private router = inject(Router);
   private poemsService = inject(PoemsService);
   protected settings = inject(SettingsService);
+  protected uiState = inject(UiStateService);
 
   theme = this.settings.currentTheme.asReadonly();
   font = this.settings.currentFont.asReadonly();
 
-  showCover = signal(true);
+  showCover = this.uiState.showCover;
   showSettings = signal(false);
 
   selectedAuthor = signal<string | null>(null);
@@ -170,6 +177,10 @@ export class HomeComponent implements OnInit {
 
   onFontChange(font: FontId): void {
     this.settings.setFont(font);
+  }
+
+  enterLibrary(): void {
+    this.showCover.set(false);
   }
 
   navigateToPoem(id: string): void {

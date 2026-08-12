@@ -1,4 +1,4 @@
-import { Component, input, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, computed } from '@angular/core';
 import type { Poem } from '../../services/poems.service';
 import { shareClasses } from '../../theme-utils';
 import type { ThemeId } from '../../services/settings.service';
@@ -6,6 +6,7 @@ import type { ThemeId } from '../../services/settings.service';
 @Component({
   selector: 'app-share-card',
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-6 rounded-2xl shadow-2xl"
       [class]="styles().bg"

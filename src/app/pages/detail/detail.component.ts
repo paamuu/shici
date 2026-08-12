@@ -1,4 +1,14 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PoemsService, type Poem } from '../../services/poems.service';
 import { SettingsService } from '../../services/settings.service';
@@ -10,6 +20,7 @@ type TabType = 'annotations' | 'translation' | 'appreciation';
 @Component({
   selector: 'app-detail',
   imports: [ShareCardComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (poem(); as poem) {
       <div class="min-h-screen transition-colors duration-500"
@@ -21,20 +32,25 @@ type TabType = 'annotations' | 'translation' | 'appreciation';
           [class]="styles().border">
           <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <button
+              type="button"
+              aria-label="返回首页"
               (click)="goBack()"
               class="flex items-center gap-2 hover:opacity-70 transition-opacity"
               [class]="styles().muted">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
               </svg>
               <span class="text-sm">返回</span>
             </button>
 
             <button
-              (click)="showShareCard.set(true)"
+              type="button"
+              #shareButton
+              aria-label="分享这首诗"
+              (click)="openShareCard(shareButton)"
               class="p-2 rounded-lg hover:opacity-70 transition-opacity"
               [class]="styles().muted">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
               </svg>
             </button>
@@ -88,9 +104,14 @@ type TabType = 'annotations' | 'translation' | 'appreciation';
           <!-- Tabs -->
           <div class="border rounded-2xl overflow-hidden shadow-sm"
             [class]="styles().card + ' ' + styles().border">
-            <div class="flex border-b" [class]="styles().border">
+            <div class="flex border-b" role="tablist" [class]="styles().border">
               @for (tab of tabs; track tab.id) {
                 <button
+                  type="button"
+                  role="tab"
+                  [id]="'tab-' + tab.id"
+                  [attr.aria-selected]="activeTab() === tab.id"
+                  [attr.aria-controls]="'tab-panel-' + tab.id"
                   (click)="activeTab.set(tab.id)"
                   class="flex-1 flex items-center justify-center gap-2 py-4 text-sm transition-all"
                   [class]="activeTab() === tab.id ? styles().tabActive : styles().tab">
@@ -107,7 +128,11 @@ type TabType = 'annotations' | 'translation' | 'appreciation';
               }
             </div>
 
-            <div class="p-6 md:p-8">
+            <div
+              class="p-6 md:p-8"
+              role="tabpanel"
+              [id]="'tab-panel-' + activeTab()"
+              [attr.aria-labelledby]="'tab-' + activeTab()">
               @if (activeTab() === 'annotations') {
                 <div class="flex flex-col gap-4">
                   @if (poem.annotations && poem.annotations.length > 0) {
@@ -186,11 +211,31 @@ type TabType = 'annotations' | 'translation' | 'appreciation';
         <!-- Share Card Modal -->
         @if (showShareCard()) {
           <div
+            #shareDialog
             class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-            (click)="showShareCard.set(false)">
+            role="dialog"
+            aria-modal="true"
+            aria-label="分享诗词卡片"
+            tabindex="-1"
+            (click)="closeShareCard()"
+            (keydown.escape)="closeShareCard()"
+            (keydown.tab)="trapFocus($event)"
+          >
             <div
               class="max-w-md w-full max-h-[90vh] overflow-auto"
               (click)="$event.stopPropagation()">
+              <div class="flex justify-end mb-3">
+                <button
+                  type="button"
+                  class="p-2 rounded-full bg-black/30 text-white hover:bg-black/40 transition-colors"
+                  aria-label="关闭分享卡片"
+                  (click)="closeShareCard()"
+                >
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                  </svg>
+                </button>
+              </div>
               <app-share-card [poem]="poem" [theme]="theme()" />
               <p class="text-center text-white/60 text-sm mt-4">长按保存图片分享</p>
             </div>
@@ -217,12 +262,17 @@ export class DetailComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private poemsService = inject(PoemsService);
+  private destroyRef = inject(DestroyRef);
   settings = inject(SettingsService);
 
   theme = this.settings.currentTheme.asReadonly();
 
+  readonly shareDialog = viewChild<ElementRef<HTMLDivElement>>('shareDialog');
+
   activeTab = signal<TabType>('annotations');
   showShareCard = signal(false);
+
+  private shareTrigger: HTMLButtonElement | null = null;
 
   tabs: { id: TabType; label: string }[] = [
     { id: 'annotations', label: '注释' },
@@ -245,10 +295,10 @@ export class DetailComponent {
   styles = computed(() => themeClassesExtended[this.theme()] ?? themeClassesExtended.classic);
 
   constructor() {
-    const id = this.route.snapshot.paramMap.get('id') || '';
-    const poem = this.poemsService.getPoemById(id);
-    this.poem.set(poem);
-    this.currentIndex.set(this.poemsService.poems().findIndex((p) => p.id === id));
+    this.updatePoem(this.route.snapshot.paramMap.get('id') || '');
+    this.route.paramMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.updatePoem(params.get('id') || ''));
   }
 
   goBack(): void {
@@ -256,12 +306,62 @@ export class DetailComponent {
   }
 
   navigateToPoem(id: string): void {
-    this.router.navigate(['/poem', id]).then(() => {
-      const poem = this.poemsService.getPoemById(id);
-      this.poem.set(poem);
-      this.currentIndex.set(this.poemsService.poems().findIndex((p) => p.id === id));
-      this.activeTab.set('annotations');
-      this.showShareCard.set(false);
-    });
+    this.router.navigate(['/poem', id]);
+  }
+
+  private updatePoem(id: string): void {
+    this.poem.set(this.poemsService.getPoemById(id));
+    this.currentIndex.set(this.poemsService.poems().findIndex((p) => p.id === id));
+    this.activeTab.set('annotations');
+    this.closeShareCard();
+  }
+
+  openShareCard(trigger: HTMLButtonElement): void {
+    this.shareTrigger = trigger;
+    this.lockBodyScroll();
+    this.showShareCard.set(true);
+    setTimeout(() => this.shareDialog()?.nativeElement.focus());
+  }
+
+  closeShareCard(): void {
+    this.showShareCard.set(false);
+    this.unlockBodyScroll();
+    if (this.shareTrigger) {
+      this.shareTrigger.focus();
+      this.shareTrigger = null;
+    }
+  }
+
+  trapFocus(event: Event): void {
+    const dialog = this.shareDialog()?.nativeElement;
+    if (!dialog) return;
+
+    const keyboardEvent = event as KeyboardEvent;
+    const focusable = Array.from(
+      dialog.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (keyboardEvent.shiftKey && document.activeElement === first) {
+      keyboardEvent.preventDefault();
+      last.focus();
+    } else if (!keyboardEvent.shiftKey && document.activeElement === last) {
+      keyboardEvent.preventDefault();
+      first.focus();
+    }
+  }
+
+  private lockBodyScroll(): void {
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('overflow-hidden');
+    }
+  }
+
+  private unlockBodyScroll(): void {
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('overflow-hidden');
+    }
   }
 }

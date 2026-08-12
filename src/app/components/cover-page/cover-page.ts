@@ -1,10 +1,11 @@
-import { Component, input, output, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, computed } from '@angular/core';
 import { coverClasses } from '../../theme-utils';
 import type { ThemeId } from '../../services/settings.service';
 
 @Component({
   selector: 'app-cover-page',
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden"
       [class]="styles().bg">

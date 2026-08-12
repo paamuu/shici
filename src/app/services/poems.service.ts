@@ -44,11 +44,27 @@ export class PoemsService {
 
     const manifest = await firstValueFrom(this.http.get<Manifest>(`${DATA_BASE}manifest.json`));
 
-    const poems = await Promise.all(
+    const results = await Promise.allSettled(
       manifest.files.map((file) =>
         firstValueFrom(this.http.get<Poem>(`${DATA_BASE}${file}`))
       )
     );
+
+    const poems: Poem[] = [];
+    const failedFiles: string[] = [];
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        poems.push(result.value);
+      } else {
+        failedFiles.push(manifest.files[index]);
+      }
+    });
+
+    if (failedFiles.length > 0) {
+      console.warn(
+        `[PoemsService] Failed to load ${failedFiles.length} poem file(s): ${failedFiles.join(', ')}`
+      );
+    }
 
     this._poems.set(poems);
     this.loaded = true;
@@ -74,4 +90,3 @@ export class PoemsService {
     return this._poems().find((p) => p.id === id);
   }
 }
-
